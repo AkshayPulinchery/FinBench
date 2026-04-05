@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openenv-fintech"
+version = "1.0.0"
+description = "Seeded financial decision benchmark for OpenEnv with FastAPI, Gradio, and deterministic task scoring."
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+license = { text = "MIT" }
+authors = [
+  { name = "OpenEnv Fintech Contributors" }
+]
+keywords = ["openenv", "benchmark", "fastapi", "fintech", "huggingface-spaces"]
+dependencies = [
+  "openenv-core[core]>=0.2.2",
+  "fastapi==0.115.14",
+  "uvicorn[standard]==0.35.0",
+  "pydantic==2.12.5",
+  "numpy==1.26.4",
+  "pandas==2.2.3",
+  "openai==2.7.2",
+  "anthropic==0.51.0",
+  "gradio==6.11.0",
+  "httpx==0.28.1",
+]
+
+[project.scripts]
+server = "server.app:main"
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.3.5",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["openenv_fintech*", "server*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

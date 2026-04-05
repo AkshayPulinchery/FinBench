@@ -1,0 +1,20 @@
+name: openenv-fintech
+version: 1.0.0
+tasks:
+  - id: loan_underwriting
+    difficulty: easy
+    max_steps: 3
+    score_range: [0.0, 1.0]
+  - id: fraud_detection
+    difficulty: medium
+    max_steps: 20
+    score_range: [0.0, 1.0]
+  - id: portfolio_rebalancing
+    difficulty: hard
+    max_steps: 20
+    score_range: [0.0, 1.0]
+observation_space: typed_dict
+action_space: typed_dict
+reward: partial_credit
+reproducible: seed_deterministic
+
