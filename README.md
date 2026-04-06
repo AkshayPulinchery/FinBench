@@ -1,6 +1,6 @@
 # Frontend UI for OpenEnv Fintech
 
-This frontend is a static retro-style control panel inspired by classic terminal dashboards and retroui aesthetics.
+This frontend is a React + TypeScript + Tailwind CSS control panel inspired by retro and neo-brutalist interfaces.
 
 ## Features
 
@@ -19,20 +19,20 @@ This frontend is a static retro-style control panel inspired by classic terminal
 ## Run
 
 1. Start backend API from `JAS_BACKEND/FinBench` on port `7860`.
-2. Start the frontend static server from `frontend`:
+2. Install frontend dependencies from `frontend`:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\start-frontend.ps1
+npm install
 ```
 
-3. Open `http://localhost:5500` in your browser.
+3. Start the Vite dev server:
+
+```powershell
+npm run dev
+```
+
+4. Open the local URL shown by Vite (usually `http://localhost:5173`).
 4. Keep API base URL as `http://localhost:7860` unless your server is elsewhere.
-
-Optional custom port:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\start-frontend.ps1 -Port 8080
-```
 
 ## Notes
 
