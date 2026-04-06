@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FinBench — OpenEnv Fintech Console</title>
+    <meta name="description" content="OpenEnv Fintech API console — run and inspect AI episodes for loan underwriting, fraud detection, and portfolio rebalancing." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+
+    <!-- NAV -->
+    <header class="navbar">
+      <div class="nav-inner">
+        <a class="brand" href="#">
+          <div class="brand-icon">F</div>
+          <span class="brand-text">Fin<strong>Bench</strong></span>
+        </a>
+
+        <nav class="nav-center">
+          <a href="#console" class="nav-pill active">Console</a>
+          <a href="http://localhost:7860/docs" target="_blank" class="nav-pill">API Docs ↗</a>
+          <a href="http://localhost:7860/health" target="_blank" class="nav-pill">Health ↗</a>
+        </nav>
+
+        <div class="nav-end">
+          <span id="statusBadge" class="status-badge offline">
+            <span class="status-dot"></span>
+            <span id="statusTxt">Offline</span>
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero" id="console">
+      <div class="hero-inner">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          OpenEnv Fintech · v1.0.0 · seed-deterministic
+        </div>
+        <h1 class="hero-title">AI Fintech<br><span class="accent-text">Episode Console</span></h1>
+        <p class="hero-sub">High-fidelity benchmarking for financial agents. Run, step, and analyze episodes for loan underwriting, fraud detection, and portfolio rebalancing.</p>
+        <div class="hero-meta">
+          <span>Active Session ID: <strong id="sessionIdDisplay">--</strong></span>
+          <span>Environment: <strong class="env-tag">PROD-SIM</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN GRID -->
+    <main class="main-wrap">
+
+      <!-- ── LEFT: Server + Session ── -->
+      <aside class="col-left">
+
+        <div class="card" id="server-card">
+          <div class="card-header">
+            <span class="card-icon">⬡</span>
+            <h2>Server</h2>
+          </div>
+          <div class="card-body">
+            <label for="apiBase">API Base URL</label>
+            <input id="apiBase" type="text" value="http://localhost:7860" />
+            <button id="healthBtn" class="btn btn-yellow">Ping Health</button>
+            <pre id="healthOut" class="output-box"></pre>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">⊞</span>
+            <h2>Episode Control</h2>
+          </div>
+          <div class="card-body">
+
+            <label for="taskSelect">Task</label>
+            <select id="taskSelect">
+              <option value="loan_underwriting">loan_underwriting</option>
+              <option value="fraud_detection">fraud_detection</option>
+              <option value="portfolio_rebalancing">portfolio_rebalancing</option>
+            </select>
+
+            <label for="seedInput">Seed</label>
+            <input id="seedInput" type="number" value="42" />
+
+            <button id="resetBtn" class="btn btn-yellow btn-full">↺ Reset / New Session</button>
+
+            <label for="sessionId">Session ID</label>
+            <input id="sessionId" type="text" placeholder="created by reset" readonly class="input-readonly" />
+
+            <div class="btn-row">
+              <button id="stateBtn" class="btn btn-outline">Get State</button>
+              <button id="closeBtn" class="btn btn-danger">Close</button>
+            </div>
+
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- ── MIDDLE: Action Composer ── -->
+      <section class="col-mid">
+        <div class="card card-tall">
+          <div class="card-header">
+            <span class="card-icon">✦</span>
+            <h2>Action Composer</h2>
+          </div>
+          <div class="card-body">
+
+            <!-- Loan Underwriting -->
+            <div id="loanForm" class="task-form">
+              <div class="task-tag">Loan Underwriting</div>
+
+              <label for="loanDecision">Decision</label>
+              <select id="loanDecision">
+                <option value="approve">approve</option>
+                <option value="reject">reject</option>
+                <option value="request_info">request_info</option>
+              </select>
+
+              <label for="loanReasoning">Reasoning</label>
+              <textarea id="loanReasoning" rows="3">Strong repayment profile.</textarea>
+
+              <label for="loanRisk">Risk Tier</label>
+              <select id="loanRisk">
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+              </select>
+
+              <label for="loanRate">Interest Rate Suggestion <span class="label-hint">(approve only)</span></label>
+              <input id="loanRate" type="number" min="0.03" max="0.35" step="0.01" value="0.07" />
+            </div>
+
+            <!-- Fraud Detection -->
+            <div id="fraudForm" class="task-form hidden">
+              <div class="task-tag">Fraud Detection</div>
+
+              <label for="fraudFlag">Flag Transaction</label>
+              <select id="fraudFlag">
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
+
+              <label for="fraudConfidence">Confidence (0–1)</label>
+              <input id="fraudConfidence" type="number" min="0" max="1" step="0.01" value="0.91" />
+
+              <label for="fraudHold">Hold Card</label>
+              <select id="fraudHold">
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
+
+              <label for="fraudReason">Reason Code</label>
+              <select id="fraudReason">
+                <option value="velocity">velocity</option>
+                <option value="location_anomaly">location_anomaly</option>
+                <option value="amount_anomaly">amount_anomaly</option>
+                <option value="merchant_risk">merchant_risk</option>
+                <option value="pattern_break">pattern_break</option>
+                <option value="none">none</option>
+              </select>
+
+              <label for="fraudNotes">Notes</label>
+              <textarea id="fraudNotes" rows="3">Rapid pattern break from normal spending behavior.</textarea>
+            </div>
+
+            <!-- Portfolio Rebalancing -->
+            <div id="portfolioForm" class="task-form hidden">
+              <div class="task-tag">Portfolio Rebalancing</div>
+
+              <div id="tradeRows" class="trade-stack"></div>
+              <button id="addTradeBtn" class="btn btn-outline" type="button">+ Add Trade Row</button>
+
+              <label for="deferRebalancing">Defer Rebalancing</label>
+              <select id="deferRebalancing">
+                <option value="false">false</option>
+                <option value="true">true</option>
+              </select>
+
+              <label for="riskComment">Risk Comment</label>
+              <textarea id="riskComment" rows="3">Gradual rebalance while preserving transaction budget.</textarea>
+            </div>
+
+            <button id="stepBtn" class="btn btn-black btn-full btn-lg">▶ Submit Step</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── RIGHT: Outputs ── -->
+      <section class="col-right">
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">◎</span>
+            <h2>Observation</h2>
+          </div>
+          <div class="card-body">
+            <pre id="observationOut" class="output-box"></pre>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">◈</span>
+            <h2>Step Result</h2>
+          </div>
+          <div class="card-body">
+            <pre id="resultOut" class="output-box"></pre>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">≡</span>
+            <h2>Event Log</h2>
+          </div>
+          <div class="card-body">
+            <ul id="logList" class="log-list"></ul>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-top">
+          <div class="footer-brand">
+            <div class="brand-icon">F</div>
+            <span class="brand-text">Fin<strong>Bench</strong></span>
+          </div>
+          <p class="footer-desc">
+            OpenEnv Fintech Console is a benchmarking platform for evaluatng 
+            AI agents in complex financial environments. Built for reliability 
+            and transparency in automated decision systems.
+          </p>
+        </div>
+        
+        <div class="footer-links">
+          <div class="footer-col">
+            <h3>Project</h3>
+            <a href="#">Github Repository</a>
+            <a href="#">Release Notes</a>
+            <a href="#">Technical Docs</a>
+            <a href="#">Benchmark Suite</a>
+          </div>
+          <div class="footer-col">
+            <h3>Resources</h3>
+            <a href="#">OpenEnv Protocol</a>
+            <a href="#">Agent SDK</a>
+            <a href="#">Model Zoo</a>
+            <a href="#">Data Policies</a>
+          </div>
+          <div class="footer-col">
+            <h3>Company</h3>
+            <a href="#">About OpenEnv</a>
+            <a href="#">Contact Support</a>
+            <a href="#">Feedback Loop</a>
+            <a href="#">Press Kit</a>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <div class="footer-copy">
+            <p>© 2026 FinBench OpenEnv Episode Console. Engineered by DeepMind Advanced Agentic Coding.</p>
+          </div>
+          <div class="footer-social">
+            <a href="#" class="social-link">𝕏</a>
+            <a href="#" class="social-link">🐱</a>
+            <a href="#" class="social-link">💼</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Trade Template -->
+    <template id="tradeTemplate">
+      <div class="trade-row">
+        <input class="asset" type="text" placeholder="AST01" />
+        <select class="direction">
+          <option value="buy">buy</option>
+          <option value="sell">sell</option>
+          <option value="hold">hold</option>
+        </select>
+        <input class="amount" type="number" min="0" step="1" value="1800" />
+        <input class="rationale" type="text" value="Trim or increase toward target." />
+        <button class="remove btn btn-danger btn-sm" type="button">✕</button>
+      </div>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
