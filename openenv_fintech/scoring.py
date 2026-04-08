@@ -7,9 +7,12 @@ def clamp(value: float, lower: float, upper: float) -> float:
     return max(lower, min(upper, value))
 
 
+NUDGE = 1e-6
+
+
 def clamp01(value: float) -> float:
     # Hackathon requires scores strictly between 0 and 1
-    return clamp(value, 1e-6, 1.0 - 1e-6)
+    return clamp(value, NUDGE, 1.0 - NUDGE)
 
 
 def normalize_score(raw: float, min_possible: float, max_possible: float) -> float:

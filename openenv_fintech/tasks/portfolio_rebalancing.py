@@ -18,6 +18,7 @@ from openenv_fintech.models.observations import (
     PortfolioObservation,
 )
 from openenv_fintech.models.results import StepResult
+from openenv_fintech.scoring import NUDGE
 
 from .base import BaseTask
 
@@ -195,7 +196,7 @@ class PortfolioRebalancingTask(BaseTask[PortfolioObservation, PortfolioAction]):
         within_band = sum(
             1 for asset in self.asset_ids if abs(weights[asset] - self.target_weights[asset]) <= 0.02
         )
-        step_reward = 0.02 * within_band
+        step_reward = max(NUDGE, 0.02 * within_band)
         self.partial_credit_total += step_reward
         if all(abs(weights[asset] - self.target_weights[asset]) <= 0.02 for asset in self.asset_ids):
             if self.reached_target_day is None:

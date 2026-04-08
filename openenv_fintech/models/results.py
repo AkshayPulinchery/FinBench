@@ -45,8 +45,8 @@ class StateSnapshot(BaseModel):
 class EpisodeResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    final_score: float = Field(ge=0.0, le=1.0)
-    total_reward: float
+    final_score: float = Field(default=0.0)
+    total_reward: float = Field(default=0.0)
     steps: int = Field(ge=0)
     success: bool
     breakdown: dict[str, Any]

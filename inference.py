@@ -10,6 +10,7 @@ from pydantic import ValidationError
 
 from openenv_fintech.models.actions import FraudAction, LoanAction, PortfolioAction
 from openenv_fintech.models.results import EpisodeResult
+from openenv_fintech.scoring import NUDGE
 
 # Hackathon Compliance: Use API_BASE_URL and API_KEY for the LLM Proxy
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
@@ -187,20 +188,25 @@ async def run_episode(client: AsyncOpenAI, task_name: str, seed: int) -> Episode
             if steps >= MAX_STEPS[task_name] and not done:
                 breakdown["terminated"] = "max_steps"
 
-            final_score = rewards[-1] if rewards else 0.0
+            final_score = rewards[-1] if rewards else NUDGE
+            # total_reward also nudged if exactly 0
+            tr = sum(rewards)
+            total_reward = tr if tr != 0 else NUDGE
+
             success = final_score >= 0.1
             return EpisodeResult(
                 final_score=final_score,
-                total_reward=sum(rewards),
+                total_reward=total_reward,
                 steps=steps,
                 success=success,
                 breakdown=breakdown,
             )
         except Exception as exc:
             log_step(steps + 1, {}, 0.0, True, str(exc))
+            # Even on error, score must be in (0, 1)
             return EpisodeResult(
-                final_score=0.0,
-                total_reward=sum(rewards),
+                final_score=NUDGE,
+                total_reward=sum(rewards) if rewards else NUDGE,
                 steps=steps,
                 success=False,
                 breakdown={"error": str(exc)},
