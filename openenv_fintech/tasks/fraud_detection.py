@@ -8,7 +8,7 @@ from openenv_fintech.graders.rule_based import FraudDetectionGrader
 from openenv_fintech.models.actions import FraudAction
 from openenv_fintech.models.observations import TransactionObservation
 from openenv_fintech.models.results import StepResult
-from openenv_fintech.scoring import NUDGE
+from openenv_fintech.scoring import MIN_SCORE
 
 from .base import BaseTask
 
@@ -45,7 +45,7 @@ class FraudDetectionTask(BaseTask[TransactionObservation, FraudAction]):
         self.actions.append(action)
         self.current_step += 1
         is_final = self.current_step >= len(self.transactions)
-        reward = NUDGE
+        reward = MIN_SCORE
         info: dict[str, object] = {"progress": f"{self.current_step}/{len(self.transactions)}"}
 
         if is_final:

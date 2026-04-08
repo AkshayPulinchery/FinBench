@@ -6,7 +6,7 @@ import math
 from statistics import mean, pstdev
 
 from openenv_fintech.models.actions import FraudAction, LoanAction
-from openenv_fintech.scoring import clamp01, normalize_score
+from openenv_fintech.scoring import MIN_SCORE, MAX_SCORE, clamp01, normalize_score
 
 from .base import BaseGrader
 
@@ -62,7 +62,7 @@ class FraudDetectionGrader(BaseGrader):
     @staticmethod
     def _expected_calibration_error(actions: list[FraudAction], labels: list[bool], bins: int = 5) -> float:
         if not actions:
-            return 1.0
+            return MAX_SCORE
         bucket_size = 1.0 / bins
         ece = 0.0
         for idx in range(bins):
@@ -76,7 +76,7 @@ class FraudDetectionGrader(BaseGrader):
             if not bucket:
                 continue
             avg_conf = mean(action.confidence for action, _ in bucket)
-            accuracy = mean(1.0 if action.flag == label else 0.0 for action, label in bucket)
+            accuracy = mean(MAX_SCORE if action.flag == label else MIN_SCORE for action, label in bucket)
             ece += abs(avg_conf - accuracy) * (len(bucket) / len(actions))
         return ece
 
@@ -90,9 +90,9 @@ class FraudDetectionGrader(BaseGrader):
         fn = sum((not flag) and label for flag, label in zip(flags, labels))
         precision = tp / max(tp + fp, 1)
         recall = tp / max(tp + fn, 1)
-        f1 = 0.0 if precision + recall == 0 else 2 * precision * recall / (precision + recall)
+        f1 = MIN_SCORE if precision + recall == 0 else 2 * precision * recall / (precision + recall)
         fpr = fp / max(fp + tn, 1)
-        calibration = clamp01(1.0 - self._expected_calibration_error(actions, labels))
+        calibration = clamp01(MAX_SCORE - self._expected_calibration_error(actions, labels))
 
         fraud_indices = [idx for idx, label in enumerate(labels) if label]
         high_value_index = None
@@ -105,7 +105,7 @@ class FraudDetectionGrader(BaseGrader):
                 for idx in range(len(labels))
             )
         )
-        early_bonus = 0.15 if caught_early else 0.0
+        early_bonus = 0.15 if caught_early else MIN_SCORE
         missed_high_value = sum(
             1
             for label, flag, amount in zip(labels, flags, amounts)
@@ -129,10 +129,10 @@ class PortfolioRebalancingGrader(BaseGrader):
     @staticmethod
     def _sharpe_ratio(returns: list[float]) -> float:
         if len(returns) < 2:
-            return 0.0
+            return MIN_SCORE
         volatility = pstdev(returns)
         if volatility == 0:
-            return 0.0
+            return MIN_SCORE
         return mean(returns) / volatility * math.sqrt(252)
 
     def score(
@@ -159,9 +159,9 @@ class PortfolioRebalancingGrader(BaseGrader):
             cost_efficiency = clamp01(0.5 - min(utilization - 1.0, 1.0) * 0.5)
 
         sharpe = self._sharpe_ratio(daily_returns)
-        sharpe_score = clamp01((sharpe + 1.0) / 3.0)
-        early_bonus = 0.1 if reached_target_day is not None and (max_steps - reached_target_day) >= 3 else 0.0
-        drift_penalty = 0.1 if drift_breached else 0.0
+        sharpe_score = clamp01((sharpe + MAX_SCORE) / 3.0)
+        early_bonus = 0.1 if reached_target_day is not None and (max_steps - reached_target_day) >= 3 else MIN_SCORE
+        drift_penalty = 0.1 if drift_breached else MIN_SCORE
         violation_penalty = 0.15 * violation_count
 
         raw = (

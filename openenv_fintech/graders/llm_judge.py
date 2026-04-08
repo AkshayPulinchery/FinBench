@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 from typing import Any
+from openenv_fintech.scoring import MIN_SCORE, MAX_SCORE
 
 
 class LLMJudge:
@@ -15,11 +16,11 @@ class LLMJudge:
 
     async def score_reasoning(self, reasoning_text: str, context: dict[str, Any]) -> float:
         if not self.enabled or not reasoning_text.strip():
-            return 0.01
+            return MIN_SCORE
         try:
             from anthropic import AsyncAnthropic
         except ImportError:
-            return 0.0
+            return MIN_SCORE
 
         client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
         prompt = (
@@ -40,10 +41,10 @@ class LLMJudge:
                 timeout=self.timeout_seconds,
             )
         except Exception:
-            return 0.0
+            return MIN_SCORE
 
         try:
             text = response.content[0].text.strip()
-            return max(0.01, min(0.2, float(text)))
+            return max(MIN_SCORE, min(MAX_SCORE, float(text)))
         except Exception:
-            return 0.01
+            return MIN_SCORE
