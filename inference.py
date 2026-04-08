@@ -1,7 +1,3 @@
-"""Judged inference runner for OpenEnv Fintech."""
-
-from __future__ import annotations
-
 import argparse
 import asyncio
 import json
@@ -9,19 +5,33 @@ import os
 from typing import Any
 
 import httpx
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, OpenAI
+from pydantic import ValidationError
 
+from openenv_fintech.models.actions import FraudAction, LoanAction, PortfolioAction
 from openenv_fintech.models.results import EpisodeResult
 
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:7860")
-OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://router.huggingface.co/v1")
+# Hackathon Compliance: Use API_BASE_URL and API_KEY for the LLM Proxy
+API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+API_KEY = os.getenv("API_KEY", os.getenv("OPENAI_API_KEY", os.getenv("HF_TOKEN", "")))
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "") or os.getenv("HF_TOKEN", "")
+
+# Environment Server URL (The Space URL)
+# The validator might inject this as ENV_URL or SPACE_URL. 
+# If not provided, it defaults to the local Space port.
+ENV_URL = os.getenv("ENV_URL", os.getenv("SPACE_URL", "http://localhost:7860"))
+
 ENV_NAME = "openenv-fintech"
 MAX_STEPS = {
     "loan_underwriting": 3,
     "fraud_detection": 20,
     "portfolio_rebalancing": 20,
+}
+
+ACTION_MODELS = {
+    "loan_underwriting": LoanAction,
+    "fraud_detection": FraudAction,
+    "portfolio_rebalancing": PortfolioAction,
 }
 
 
@@ -99,6 +109,8 @@ async def call_llm_for_action(
         {"role": "system", "content": SYSTEM_PROMPTS[task_name]},
         {"role": "user", "content": build_user_prompt(task_name, observation, step, last_reward)},
     ]
+    model_cls = ACTION_MODELS[task_name]
+
     for attempt in range(3):
         completion = await client.chat.completions.create(
             model=MODEL_NAME,
@@ -107,22 +119,26 @@ async def call_llm_for_action(
         )
         content = completion.choices[0].message.content or ""
         try:
-            return extract_json_block(content)
+            action_dict = extract_json_block(content)
+            # Local validation to prevent server-side 422 errors
+            model_cls.model_validate(action_dict)
+            return action_dict
         except (ValueError, json.JSONDecodeError):
             if attempt == 2:
                 raise
-            messages.append(
-                {
-                    "role": "assistant",
-                    "content": content,
-                }
+            feedback = "Return valid JSON only. Do not include markdown or explanations."
+        except ValidationError as exc:
+            if attempt == 2:
+                raise
+            # Convert validation error to feedback for the LLM
+            error_details = "; ".join(
+                f"{err['loc'][0]}: {err['msg']}" for err in exc.errors()
             )
-            messages.append(
-                {
-                    "role": "user",
-                    "content": "Return valid JSON only. Do not include markdown or explanations.",
-                }
-            )
+            feedback = f"Your JSON was valid but failed schema validation: {error_details}. Please fix these fields and try again."
+
+        messages.append({"role": "assistant", "content": content})
+        messages.append({"role": "user", "content": feedback})
+
     raise RuntimeError("unreachable")
 
 
@@ -135,7 +151,7 @@ async def run_episode(client: AsyncOpenAI, task_name: str, seed: int) -> Episode
     breakdown: dict[str, Any] = {}
     log_start(task_name, ENV_NAME, MODEL_NAME.split("/")[-1])
 
-    async with httpx.AsyncClient(base_url=API_BASE_URL, timeout=30.0) as env_client:
+    async with httpx.AsyncClient(base_url=ENV_URL, timeout=30.0) as env_client:
         try:
             reset_response = await env_client.post("/reset", json={"task": task_name, "seed": seed})
             reset_response.raise_for_status()
@@ -209,10 +225,10 @@ async def main() -> None:
     parser.add_argument("--episodes", type=int, default=1)
     args = parser.parse_args()
 
-    if not OPENAI_API_KEY:
-        raise RuntimeError("OPENAI_API_KEY is required")
+    if not API_KEY:
+        raise RuntimeError("API_KEY is required (check environment variables)")
 
-    client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
+    client = AsyncOpenAI(base_url=API_BASE_URL, api_key=API_KEY)
     task_names = list(MAX_STEPS) if args.task == "all" else [args.task]
     aggregate: dict[str, list[float]] = {task_name: [] for task_name in task_names}
     for task_name in task_names:
