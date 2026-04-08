@@ -114,12 +114,12 @@ class FraudDetectionGrader(BaseGrader):
         penalty = 0.2 * missed_high_value
         raw = recall * 0.4 + (1.0 - fpr) * 0.3 + f1 * 0.2 + calibration * 0.1 + early_bonus - penalty
         return {
-            "precision": precision,
-            "recall": recall,
-            "f1": f1,
-            "false_positive_rate": fpr,
-            "calibration": calibration,
-            "early_detection_bonus": early_bonus,
+            "precision": safe_score(precision),
+            "recall": safe_score(recall),
+            "f1": safe_score(f1),
+            "false_positive_rate": safe_score(fpr),
+            "calibration": safe_score(calibration),
+            "early_detection_bonus": safe_score(early_bonus),
             "missed_high_value_penalty": penalty,
             "final_score": safe_score(raw),
         }
@@ -183,7 +183,7 @@ class PortfolioRebalancingGrader(BaseGrader):
             "sharpe_score": safe_score(sharpe_score),
             "violation_penalty": violation_penalty,
             "drift_penalty": drift_penalty,
-            "early_completion_bonus": early_bonus,
+            "early_completion_bonus": safe_score(early_bonus),
             "partial_credit_total": partial_credit_total,
             "final_score": safe_score(raw),
         }

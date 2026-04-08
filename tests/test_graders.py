@@ -146,3 +146,59 @@ def test_grader_scores_never_hit_boundaries():
         observation = portfolio_result.observation
     assert 0.0 < portfolio_result.reward < 1.0
 
+
+def test_breakdown_score_fields_stay_open_interval():
+    loan_task = LoanUnderwritingTask(seed=11, episode=11)
+    loan_task.reset()
+    loan_result = loan_task.step(
+        LoanAction(
+            decision="approve",
+            reasoning="breakdown check",
+            risk_tier="low",
+            interest_rate_suggestion=0.07,
+        ),
+        session_id="breakdown-loan",
+    )
+    loan_breakdown = loan_result.info["breakdown"]
+    assert 0.0 < loan_breakdown["normalized_reward"] < 1.0
+
+    fraud_task = FraudDetectionTask(seed=11, episode=11)
+    fraud_task.reset()
+    while not fraud_task.done:
+        fraud_result = fraud_task.step(
+            FraudAction(
+                flag=True,
+                confidence=0.99,
+                hold=True,
+                reason_code="velocity",
+                notes="breakdown check",
+            ),
+            session_id="breakdown-fraud",
+        )
+    fraud_breakdown = fraud_result.info["breakdown"]
+    for key in ("precision", "recall", "f1", "false_positive_rate", "calibration", "early_detection_bonus", "final_score"):
+        assert 0.0 < fraud_breakdown[key] < 1.0
+
+    portfolio_task = PortfolioRebalancingTask(seed=11, episode=11)
+    observation = portfolio_task.reset()
+    while not portfolio_task.done:
+        portfolio_result = portfolio_task.step(
+            PortfolioAction(
+                trades=[
+                    TradeOrder(
+                        asset_id=next(iter(observation.portfolio)),
+                        direction="hold",
+                        amount_usd=0,
+                        rationale="breakdown check",
+                    )
+                ],
+                defer_rebalancing=False,
+                risk_comment="breakdown check",
+            ),
+            session_id="breakdown-portfolio",
+        )
+        observation = portfolio_result.observation
+    portfolio_breakdown = portfolio_result.info["breakdown"]
+    for key in ("tracking_score", "cost_efficiency", "sharpe_score", "early_completion_bonus", "final_score"):
+        assert 0.0 < portfolio_breakdown[key] < 1.0
+
