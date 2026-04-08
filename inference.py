@@ -204,6 +204,7 @@ async def run_episode(client: AsyncOpenAI, task_name: str, seed: int) -> Episode
         except Exception as exc:
             log_step(steps + 1, {}, 0.0, True, str(exc))
             # Even on error, score must be in (0, 1)
+            # Using NUDGE (0.01) to ensure it survives rounding to 0.00
             return EpisodeResult(
                 final_score=NUDGE,
                 total_reward=sum(rewards) if rewards else NUDGE,

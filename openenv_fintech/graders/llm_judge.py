@@ -15,7 +15,7 @@ class LLMJudge:
 
     async def score_reasoning(self, reasoning_text: str, context: dict[str, Any]) -> float:
         if not self.enabled or not reasoning_text.strip():
-            return 0.0
+            return 0.01
         try:
             from anthropic import AsyncAnthropic
         except ImportError:
@@ -44,7 +44,6 @@ class LLMJudge:
 
         try:
             text = response.content[0].text.strip()
-            return max(0.0, min(0.2, float(text)))
+            return max(0.01, min(0.2, float(text)))
         except Exception:
-            return 0.0
-
+            return 0.01

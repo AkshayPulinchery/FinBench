@@ -7,11 +7,12 @@ def clamp(value: float, lower: float, upper: float) -> float:
     return max(lower, min(upper, value))
 
 
-NUDGE = 1e-6
+NUDGE = 0.01
 
 
 def clamp01(value: float) -> float:
     # Hackathon requires scores strictly between 0 and 1
+    # Using 0.01 to avoid issues with rounding to 0.00
     return clamp(value, NUDGE, 1.0 - NUDGE)
 
 
