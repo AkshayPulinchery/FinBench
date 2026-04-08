@@ -6,6 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from openenv_fintech.scoring import MIN_SCORE
+
 from .observations import LoanObservation, PortfolioObservation, TransactionObservation
 
 ObservationUnion = LoanObservation | TransactionObservation | PortfolioObservation
@@ -45,8 +47,8 @@ class StateSnapshot(BaseModel):
 class EpisodeResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    final_score: float = Field(default=0.0)
-    total_reward: float = Field(default=0.0)
+    final_score: float = Field(default=MIN_SCORE)
+    total_reward: float = Field(default=MIN_SCORE)
     steps: int = Field(ge=0)
     success: bool
     breakdown: dict[str, Any]

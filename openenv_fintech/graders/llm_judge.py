@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 from typing import Any
-from openenv_fintech.scoring import MIN_SCORE, MAX_SCORE
+from openenv_fintech.scoring import MIN_SCORE, safe_score
 
 
 class LLMJudge:
@@ -45,6 +45,6 @@ class LLMJudge:
 
         try:
             text = response.content[0].text.strip()
-            return max(MIN_SCORE, min(MAX_SCORE, float(text)))
+            return safe_score(float(text))
         except Exception:
             return MIN_SCORE

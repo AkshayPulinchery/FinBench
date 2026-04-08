@@ -96,6 +96,47 @@ curl -X POST http://localhost:7860/step \
   }'
 ```
 
+Important: the action payload must match the task selected in `/reset`.
+
+Fraud detection step example:
+
+```bash
+curl -X POST http://localhost:7860/step \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id":"<SESSION_ID>",
+    "action":{
+      "flag":false,
+      "confidence":0.12,
+      "hold":false,
+      "reason_code":"none",
+      "notes":"No anomaly signals."
+    }
+  }'
+```
+
+Portfolio rebalancing step example:
+
+```bash
+curl -X POST http://localhost:7860/step \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id":"<SESSION_ID>",
+    "action":{
+      "trades":[
+        {
+          "asset_id":"AST01",
+          "direction":"hold",
+          "amount_usd":0,
+          "rationale":"No trade this step."
+        }
+      ],
+      "defer_rebalancing":false,
+      "risk_comment":"Monitoring drift before trading."
+    }
+  }'
+```
+
 Inspect state:
 
 ```bash

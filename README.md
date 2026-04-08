@@ -127,8 +127,8 @@ Current local heuristic baseline sample (`--task all --episodes 10 --seed 42`):
 | Task | Mean | Std | Min | Max |
 |---|---|
 | `loan_underwriting` | 0.672 | 0.115 | 0.600 | 0.920 |
-| `fraud_detection` | 0.990 | 0.024 | 0.918 | 1.000 |
-| `portfolio_rebalancing` | 0.528 | 0.421 | 0.000 | 1.000 |
+| `fraud_detection` | 0.990 | 0.024 | 0.918 | 0.990 |
+| `portfolio_rebalancing` | 0.528 | 0.421 | 0.010 | 0.990 |
 
 Exact scores are seed-dependent but reproducible for the same seed and episode count for the heuristic baseline.
 

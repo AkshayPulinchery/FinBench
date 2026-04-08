@@ -21,6 +21,7 @@ from openenv_fintech.models.observations import (
     PortfolioObservation,
     TransactionObservation,
 )
+from openenv_fintech.scoring import MIN_SCORE, safe_score
 
 
 def estimate_loan_risk(observation: LoanObservation) -> float:
@@ -136,7 +137,7 @@ def run_episode(task_name: str, seed: int, episode: int) -> dict[str, Any]:
         )
         observation = result.observation
         done = result.done
-    final_score = rewards[-1] if rewards else 0.0
+    final_score = safe_score(rewards[-1] if rewards else MIN_SCORE)
     return {
         "task": task_name,
         "seed": seed,

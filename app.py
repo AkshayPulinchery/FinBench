@@ -46,6 +46,12 @@ ACTION_MODEL_REGISTRY = {
     "portfolio_rebalancing": PortfolioAction,
 }
 
+
+def required_action_fields(task_name: str) -> list[str]:
+    schema = ACTION_MODEL_REGISTRY[task_name].model_json_schema()
+    required = schema.get("required", [])
+    return [field for field in required if isinstance(field, str)]
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await env_manager.start()
@@ -113,10 +119,9 @@ async def validation_handler(_: Request, exc: ValidationError) -> JSONResponse:
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_: Request, exc: HTTPException) -> JSONResponse:
-    detail = exc.detail if isinstance(exc.detail, str) else json.dumps(exc.detail)
     return JSONResponse(
         status_code=exc.status_code,
-        content={"error": "http_error", "detail": detail},
+        content={"error": "http_error", "detail": exc.detail},
     )
 
 
@@ -141,7 +146,16 @@ async def step(payload: StepRequest):
     try:
         action = parse_action(record.task_name, payload.action)
     except ValidationError as exc:
-        raise HTTPException(status_code=422, detail=exc.errors()) from exc
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "task": record.task_name,
+                "expected_action_model": ACTION_MODEL_REGISTRY[record.task_name].__name__,
+                "required_fields": required_action_fields(record.task_name),
+                "received_fields": sorted(payload.action.keys()),
+                "validation_errors": exc.errors(),
+            },
+        ) from exc
     try:
         result = env_manager.step(payload.session_id, action)
     except RuntimeError as exc:

@@ -17,6 +17,10 @@ def clamp01(value: float) -> float:
     return clamp(value, MIN_SCORE, MAX_SCORE)
 
 
+def safe_score(value: float) -> float:
+    return clamp01(value)
+
+
 def normalize_score(raw: float, min_possible: float, max_possible: float) -> float:
     if max_possible <= min_possible:
         raise ValueError("max_possible must be greater than min_possible")

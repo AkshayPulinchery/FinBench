@@ -14,7 +14,7 @@ def test_loan_grader_score_range_over_random_actions():
             interest_rate_suggestion=0.08 if episode % 2 == 0 else None,
         )
         result = task.step(action, session_id=f"s-{episode}")
-        assert 0.0 <= result.reward <= 1.0
+        assert 0.0 < result.reward < 1.0
         if not result.done:
             result = task.step(
                 LoanAction(
@@ -24,7 +24,7 @@ def test_loan_grader_score_range_over_random_actions():
                 ),
                 session_id=f"s-{episode}",
             )
-            assert 0.0 <= result.reward <= 1.0
+            assert 0.0 < result.reward < 1.0
 
 
 def test_fraud_grader_score_range_over_random_sequences():
@@ -45,7 +45,7 @@ def test_fraud_grader_score_range_over_random_sequences():
             )
             observation = result.observation
         assert observation is not None
-        assert 0.0 <= result.reward <= 1.0
+        assert 0.0 < result.reward < 1.0
 
 
 def test_portfolio_grader_score_range_over_random_sequences():
@@ -70,7 +70,7 @@ def test_portfolio_grader_score_range_over_random_sequences():
                 session_id=f"s-{episode}",
             )
             observation = result.observation
-        assert 0.0 <= result.reward <= 1.0
+        assert 0.0 < result.reward < 1.0
 
 
 def test_heuristic_agents_score_above_minimum_floor():
@@ -94,4 +94,55 @@ def test_heuristic_agents_score_above_minimum_floor():
         portfolio_result = portfolio.step(portfolio_policy(portfolio_obs), session_id="portfolio")
         portfolio_obs = portfolio_result.observation
     assert portfolio_result.reward > 0.1
+
+
+def test_grader_scores_never_hit_boundaries():
+    loan_task = LoanUnderwritingTask(seed=7, episode=7)
+    loan_task.reset()
+    loan_result = loan_task.step(
+        LoanAction(
+            decision="approve",
+            reasoning="boundary check",
+            risk_tier="low",
+            interest_rate_suggestion=0.07,
+        ),
+        session_id="boundary-loan",
+    )
+    assert 0.0 < loan_result.reward < 1.0
+
+    fraud_task = FraudDetectionTask(seed=7, episode=7)
+    fraud_task.reset()
+    while not fraud_task.done:
+        fraud_result = fraud_task.step(
+            FraudAction(
+                flag=False,
+                confidence=0.1,
+                hold=False,
+                reason_code="none",
+                notes="boundary check",
+            ),
+            session_id="boundary-fraud",
+        )
+    assert 0.0 < fraud_result.reward < 1.0
+
+    portfolio_task = PortfolioRebalancingTask(seed=7, episode=7)
+    observation = portfolio_task.reset()
+    while not portfolio_task.done:
+        portfolio_result = portfolio_task.step(
+            PortfolioAction(
+                trades=[
+                    TradeOrder(
+                        asset_id=next(iter(observation.portfolio)),
+                        direction="hold",
+                        amount_usd=0,
+                        rationale="boundary check",
+                    )
+                ],
+                defer_rebalancing=False,
+                risk_comment="boundary check",
+            ),
+            session_id="boundary-portfolio",
+        )
+        observation = portfolio_result.observation
+    assert 0.0 < portfolio_result.reward < 1.0
 

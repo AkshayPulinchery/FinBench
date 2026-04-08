@@ -10,7 +10,7 @@ from pydantic import ValidationError
 
 from openenv_fintech.models.actions import FraudAction, LoanAction, PortfolioAction
 from openenv_fintech.models.results import EpisodeResult
-from openenv_fintech.scoring import MIN_SCORE, MAX_SCORE
+from openenv_fintech.scoring import MIN_SCORE, MAX_SCORE, safe_score
 
 # Hackathon Compliance: Use API_BASE_URL and API_KEY for the LLM Proxy
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
@@ -46,6 +46,7 @@ def log_start(task: str, env: str, model: str) -> None:
 
 def log_step(step: int, action: dict[str, Any], reward: float, done: bool, error: str | None) -> None:
     error_text = "null" if error is None else error.replace("\n", " ")
+    reward = safe_score(reward)
     print(
         f"[STEP] step={step} action={single_line_json(action)} reward={reward:.2f} "
         f"done={'true' if done else 'false'} error={error_text}"
@@ -147,7 +148,7 @@ async def run_episode(client: AsyncOpenAI, task_name: str, seed: int) -> Episode
     session_id: str | None = None
     rewards: list[float] = []
     steps = 0
-    final_score = 0.0
+    final_score = MIN_SCORE
     success = False
     breakdown: dict[str, Any] = {}
     log_start(task_name, ENV_NAME, MODEL_NAME.split("/")[-1])
@@ -188,7 +189,7 @@ async def run_episode(client: AsyncOpenAI, task_name: str, seed: int) -> Episode
             if steps >= MAX_STEPS[task_name] and not done:
                 breakdown["terminated"] = "max_steps"
 
-            final_score = rewards[-1] if rewards else MIN_SCORE
+            final_score = safe_score(rewards[-1] if rewards else MIN_SCORE)
             # total_reward also nudged if exactly 0
             tr = sum(rewards)
             total_reward = tr if tr != 0 else MIN_SCORE
@@ -202,7 +203,7 @@ async def run_episode(client: AsyncOpenAI, task_name: str, seed: int) -> Episode
                 breakdown=breakdown,
             )
         except Exception as exc:
-            log_step(steps + 1, {}, 0.0, True, str(exc))
+            log_step(steps + 1, {}, MIN_SCORE, True, str(exc))
             # Even on error, score must be in (0, 1)
             # Using MIN_SCORE (0.01) to ensure it survives rounding to 0.00
             return EpisodeResult(
@@ -218,7 +219,7 @@ async def run_episode(client: AsyncOpenAI, task_name: str, seed: int) -> Episode
                     await env_client.post(f"/close/{session_id}")
                 except Exception:
                     pass
-            log_end(success, steps, final_score, rewards)
+            log_end(success, steps, safe_score(final_score), rewards)
 
 
 async def main() -> None:

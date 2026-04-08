@@ -6,7 +6,7 @@ import math
 from statistics import mean, pstdev
 
 from openenv_fintech.models.actions import FraudAction, LoanAction
-from openenv_fintech.scoring import MIN_SCORE, MAX_SCORE, clamp01, normalize_score
+from openenv_fintech.scoring import MIN_SCORE, MAX_SCORE, clamp01, normalize_score, safe_score
 
 from .base import BaseGrader
 
@@ -92,7 +92,7 @@ class FraudDetectionGrader(BaseGrader):
         recall = tp / max(tp + fn, 1)
         f1 = MIN_SCORE if precision + recall == 0 else 2 * precision * recall / (precision + recall)
         fpr = fp / max(fp + tn, 1)
-        calibration = clamp01(MAX_SCORE - self._expected_calibration_error(actions, labels))
+        calibration = safe_score(MAX_SCORE - self._expected_calibration_error(actions, labels))
 
         fraud_indices = [idx for idx, label in enumerate(labels) if label]
         high_value_index = None
@@ -121,7 +121,7 @@ class FraudDetectionGrader(BaseGrader):
             "calibration": calibration,
             "early_detection_bonus": early_bonus,
             "missed_high_value_penalty": penalty,
-            "final_score": clamp01(raw),
+            "final_score": safe_score(raw),
         }
 
 
@@ -175,16 +175,16 @@ class PortfolioRebalancingGrader(BaseGrader):
         )
         return {
             "tracking_error_rmse": rmse,
-            "tracking_score": tracking_score,
-            "cost_efficiency": cost_efficiency,
+            "tracking_score": safe_score(tracking_score),
+            "cost_efficiency": safe_score(cost_efficiency),
             "budget_used": budget_used,
             "budget_allocated": budget_allocated,
             "sharpe_ratio": sharpe,
-            "sharpe_score": sharpe_score,
+            "sharpe_score": safe_score(sharpe_score),
             "violation_penalty": violation_penalty,
             "drift_penalty": drift_penalty,
             "early_completion_bonus": early_bonus,
             "partial_credit_total": partial_credit_total,
-            "final_score": clamp01(raw),
+            "final_score": safe_score(raw),
         }
 

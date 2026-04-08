@@ -15,7 +15,7 @@ def test_loan_request_info_branch_completes_in_two_steps():
     first = task.step(request, session_id="s1")
     if first.done:
         # If the generated applicant is not ambiguous, the task is still valid.
-        assert first.reward >= 0.0
+        assert 0.0 < first.reward < 1.0
         return
     assert first.done is False
     assert len(first.observation.documents_submitted) >= len(observation.documents_submitted)
@@ -46,7 +46,7 @@ def test_fraud_task_only_scores_on_terminal_step():
             session_id="s1",
         )
         if not result.done:
-            assert result.reward == 0.0
+            assert 0.0 < result.reward < 1.0
         observation = result.observation
     assert observation is not None
 
@@ -87,7 +87,7 @@ def test_random_agent_scores_remain_meaningful():
         )
         result = loan_task.step(action, session_id=f"loan-{episode}")
         scores.append(result.reward)
-        assert 0.0 <= result.reward <= 1.0
+        assert 0.0 < result.reward < 1.0
 
     for episode in range(1, 6):
         fraud_task = FraudDetectionTask(seed=episode, episode=episode)
@@ -104,7 +104,7 @@ def test_random_agent_scores_remain_meaningful():
                 session_id=f"fraud-{episode}",
             )
         scores.append(result.reward)
-        assert 0.0 <= result.reward <= 1.0
+        assert 0.0 < result.reward < 1.0
 
     for episode in range(1, 4):
         portfolio_task = PortfolioRebalancingTask(seed=episode, episode=episode)
@@ -128,7 +128,7 @@ def test_random_agent_scores_remain_meaningful():
             )
             observation = result.observation
         scores.append(result.reward)
-        assert 0.0 <= result.reward <= 1.0
+        assert 0.0 < result.reward < 1.0
 
     assert mean(scores) > 0.1
 
