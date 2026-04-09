@@ -36,11 +36,11 @@ pip install -r requirements.txt
 uvicorn app:app --reload --port 7860
 ```
 
-For the full local runbook, API examples, test commands, baseline usage, inference setup, and Docker notes, see [RUNNING.md](/Users/jaskrrishsingh/jas/FinBench/RUNNING.md).
+For the full local runbook, API examples, test commands, baseline usage, inference setup, and Docker notes, see [RUNNING.md](RUNNING.md).
 
-For the full architecture, file map, requirement audit, and OpenEnv flow diagrams, see [PROJECT_ARCHITECTURE.md](/Users/jaskrrishsingh/jas/FinBench/PROJECT_ARCHITECTURE.md).
+For the full architecture, file map, requirement audit, and OpenEnv flow diagrams, see [PROJECT_ARCHITECTURE.md](PROJECT_ARCHITECTURE.md).
 
-For frontend integration, see [API_REFERENCE.md](/Users/jaskrrishsingh/jas/FinBench/API_REFERENCE.md).
+For frontend integration, see [API_REFERENCE.md](API_REFERENCE.md).
 
 The validator-facing API is:
 
@@ -56,11 +56,11 @@ The Hugging Face demo is mounted at `/demo`.
 
 Copy `.env.example` to `.env` and provide values as needed:
 
-- `API_BASE_URL`: environment server base URL used by `inference.py`
-- `OPENAI_BASE_URL`: model provider base URL
+- `API_BASE_URL`: model provider base URL used by `inference.py`
+- `ENV_URL`/`SPACE_URL`: environment server URL used by `inference.py`
 - `MODEL_NAME`: chat model name
-- `OPENAI_API_KEY`: provider API token used by the OpenAI client
-- `HF_TOKEN`: optional compatibility fallback for Hugging Face router setups
+- `HF_TOKEN`: provider API token used by the OpenAI client
+- `OPENAI_API_KEY`: optional compatibility fallback for provider token
 - `LLM_JUDGE_ENABLED`: optional reasoning scorer toggle
 
 ## Tasks
@@ -125,7 +125,7 @@ python3 baseline.py --task all --episodes 25 --seed 42
 Current local heuristic baseline sample (`--task all --episodes 10 --seed 42`):
 
 | Task | Mean | Std | Min | Max |
-|---|---|
+|---|---|---|---|---|
 | `loan_underwriting` | 0.672 | 0.115 | 0.600 | 0.920 |
 | `fraud_detection` | 0.990 | 0.024 | 0.918 | 0.990 |
 | `portfolio_rebalancing` | 0.528 | 0.421 | 0.010 | 0.990 |
@@ -152,7 +152,8 @@ python3 baseline.py --task all --episodes 10 --seed 42
 Run the OpenAI-client inference script:
 
 ```bash
-export OPENAI_API_KEY=your_key_here
+export HF_TOKEN=your_key_here
+export ENV_URL=http://localhost:7860
 python3 inference.py --task all --episodes 1 --seed 42
 ```
 

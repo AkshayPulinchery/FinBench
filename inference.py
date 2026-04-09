@@ -5,16 +5,16 @@ import os
 from typing import Any
 
 import httpx
-from openai import AsyncOpenAI, OpenAI
+from openai import AsyncOpenAI
 from pydantic import ValidationError
 
 from openenv_fintech.models.actions import FraudAction, LoanAction, PortfolioAction
 from openenv_fintech.models.results import EpisodeResult
-from openenv_fintech.scoring import MIN_SCORE, MAX_SCORE, safe_score
+from openenv_fintech.scoring import MIN_SCORE, safe_score
 
-# Hackathon Compliance: Use API_BASE_URL and API_KEY for the LLM Proxy
+# Hackathon Compliance: API_BASE_URL points to the LLM endpoint.
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-API_KEY = os.getenv("API_KEY", os.getenv("OPENAI_API_KEY", os.getenv("HF_TOKEN", "")))
+API_KEY = os.getenv("HF_TOKEN", os.getenv("OPENAI_API_KEY", os.getenv("API_KEY", "")))
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 
 # Environment Server URL (The Space URL)
@@ -203,7 +203,6 @@ async def run_episode(client: AsyncOpenAI, task_name: str, seed: int) -> Episode
                 breakdown=breakdown,
             )
         except Exception as exc:
-            log_step(steps + 1, {}, MIN_SCORE, True, str(exc))
             # Even on error, score must be in (0, 1)
             # Using MIN_SCORE (0.01) to ensure it survives rounding to 0.00
             return EpisodeResult(
@@ -234,7 +233,7 @@ async def main() -> None:
     args = parser.parse_args()
 
     if not API_KEY:
-        raise RuntimeError("API_KEY is required (check environment variables)")
+        raise RuntimeError("HF_TOKEN or OPENAI_API_KEY is required (check environment variables)")
 
     client = AsyncOpenAI(base_url=API_BASE_URL, api_key=API_KEY)
     task_names = list(MAX_STEPS) if args.task == "all" else [args.task]
@@ -243,17 +242,6 @@ async def main() -> None:
         for episode in range(args.episodes):
             result = await run_episode(client=client, task_name=task_name, seed=args.seed + episode)
             aggregate[task_name].append(result.final_score)
-
-    if len(task_names) > 1 or args.episodes > 1:
-        summary = {
-            task_name: {
-                "episodes": len(scores),
-                "mean_score": round(sum(scores) / len(scores), 4),
-                "scores": [round(score, 4) for score in scores],
-            }
-            for task_name, scores in aggregate.items()
-        }
-        print(json.dumps({"environment": ENV_NAME, "summary": summary}, indent=2))
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ class LLMJudge:
 
         client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
         prompt = (
-            "Score the reasoning quality from 0.0 to 0.2.\n"
+            "Score the reasoning quality from 0.01 to 0.2.\n"
             "Evaluate relevance, correctness, and completeness.\n"
             "Return only the numeric score.\n\n"
             f"Context: {context}\n"

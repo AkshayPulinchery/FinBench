@@ -16,7 +16,7 @@ python3.11 --version
 docker --version
 ```
 
-If you plan to run `inference.py` against a hosted model endpoint, you need a valid `OPENAI_API_KEY`. `HF_TOKEN` is supported as a fallback alias for Hugging Face router setups.
+If you plan to run `inference.py` against a hosted model endpoint, you need a valid `HF_TOKEN`. `OPENAI_API_KEY` is supported as a compatibility fallback.
 
 ## 2. Create A Virtual Environment
 
@@ -38,11 +38,11 @@ cp .env.example .env
 
 The key variables are:
 
-- `API_BASE_URL`: where the local environment API is running. Default is `http://localhost:7860`
-- `OPENAI_BASE_URL`: model provider base URL used by `inference.py`
+- `API_BASE_URL`: model provider base URL used by `inference.py` (LLM endpoint)
+- `ENV_URL` (or `SPACE_URL`): environment API base URL, default `http://localhost:7860`
 - `MODEL_NAME`: model identifier for the OpenAI-compatible endpoint
-- `OPENAI_API_KEY`: token for the OpenAI-compatible provider
-- `HF_TOKEN`: optional compatibility fallback
+- `HF_TOKEN`: token for the OpenAI-compatible provider
+- `OPENAI_API_KEY`: optional compatibility fallback token
 - `LLM_JUDGE_ENABLED`: optional reasoning scorer toggle, default `false`
 
 For local development, the default `.env.example` values are already correct for the API server.
@@ -202,18 +202,18 @@ python3 baseline.py \
 
 `inference.py` expects:
 
-- the env server to be running at `API_BASE_URL`
-- an OpenAI-compatible model endpoint at `OPENAI_BASE_URL`
-- a valid `OPENAI_API_KEY`
+- the env server to be running at `ENV_URL` (or `SPACE_URL`)
+- an OpenAI-compatible model endpoint at `API_BASE_URL`
+- a valid `HF_TOKEN` (or fallback `OPENAI_API_KEY`)
 
 Example:
 
 ```bash
 source .venv/bin/activate
-export API_BASE_URL=http://localhost:7860
-export OPENAI_BASE_URL=https://router.huggingface.co/v1
+export ENV_URL=http://localhost:7860
+export API_BASE_URL=https://router.huggingface.co/v1
 export MODEL_NAME=Qwen/Qwen2.5-72B-Instruct
-export OPENAI_API_KEY=your_token_here
+export HF_TOKEN=your_token_here
 
 python3 inference.py --task all --episodes 1 --seed 42
 ```
@@ -270,13 +270,13 @@ If you also have the official validator script:
 - Space type should be `Docker`
 - The app entrypoint is the container command in the `Dockerfile`
 - Required secrets are typically:
+  - `ENV_URL` (or `SPACE_URL`)
   - `API_BASE_URL`
-  - `OPENAI_BASE_URL`
   - `MODEL_NAME`
-  - `OPENAI_API_KEY`
   - `HF_TOKEN`
+  - `OPENAI_API_KEY` (optional fallback)
 
-If the Space itself is hosting the environment API, `API_BASE_URL` should point at that deployed app URL.
+If the Space itself is hosting the environment API, `ENV_URL` should point at that deployed app URL.
 
 ## 12. Common Issues
 
@@ -290,8 +290,8 @@ If the Space itself is hosting the environment API, `API_BASE_URL` should point 
 
 `inference.py` fails immediately:
 - Check `OPENAI_API_KEY`
-- Check `OPENAI_BASE_URL`
-- Confirm the API server is reachable at `API_BASE_URL`
+- Check `API_BASE_URL`
+- Confirm the API server is reachable at `ENV_URL` (or `SPACE_URL`)
 
 Docker build or run fails:
 - Make sure Docker Desktop is running
