@@ -48,8 +48,10 @@ class LoanUnderwritingGrader(BaseGrader):
             if abs(action.interest_rate_suggestion - actuarial_rate) <= 0.02:
                 raw += 0.1
         normalized = normalize_score(raw, self.min_raw, self.max_raw)
+        # Avoid exact 0.0 or 1.0 in reported raw_reward (validator rejects these)
+        raw_reported = MAX_SCORE if raw == 1.0 else (MIN_SCORE if raw == 0.0 else raw)
         return {
-            "raw_reward": raw,
+            "raw_reward": raw_reported,
             "normalized_reward": normalized,
             "p_default": p_default,
             "actuarial_rate": actuarial_rate,
